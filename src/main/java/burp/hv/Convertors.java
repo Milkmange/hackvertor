@@ -3374,6 +3374,20 @@ public class Convertors {
         return Pattern.compile((checkStart ? "^" : "") + "[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0;
     }
 
+    static String stripWhitespaceIfMultiLineBase64(String str) {
+        if (str.indexOf('\n') < 0 && str.indexOf('\r') < 0) {
+            return null;
+        }
+        String stripped = str.replaceAll("\\s+", "");
+        if (stripped.length() < 4 || stripped.length() % 4 != 0) {
+            return null;
+        }
+        if (!BASE64_WITH_WHITESPACE_PATTERN.matcher(stripped).matches()) {
+            return null;
+        }
+        return stripped;
+    }
+
     private static final Pattern ASCII_PATTERN = Pattern.compile("^[\\x00-\\x7f]+$");
     private static final Pattern PRINTABLE_ASCII_OR_SPACES_PATTERN = Pattern.compile("^[\\x09\\x0d\\x0a\\x20-\\x7f]+$");
     private static final Pattern GZIP_PATTERN = Pattern.compile("^\\x1f\\x8b\\x08");
@@ -3413,6 +3427,8 @@ public class Convertors {
     private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]+-");
     private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,\\s])+\\d{2,3}");
     private static final Pattern BASE64_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])[a-zA-Z0-9+/]{4,}={0,2}(?![a-zA-Z0-9+/=])");
+    private static final Pattern BASE64_MULTILINE_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])(?:[a-zA-Z0-9+/]{4})+(?:[\\r\\n]+(?:[a-zA-Z0-9+/]{4})+)+(?:[a-zA-Z0-9+/]{0,3}={1,2})?(?![a-zA-Z0-9+/=])");
+    private static final Pattern BASE64_WITH_WHITESPACE_PATTERN = Pattern.compile("^[a-zA-Z0-9+/]+={0,2}$");
     private static final Pattern BASE32_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Z2-7])[A-Z2-7]{4,}={0,6}(?![A-Z2-7=])");
     private static final Pattern BASE64URL_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Za-z0-9_-])[A-Za-z0-9_-]*[_-][A-Za-z0-9_-]*(?![A-Za-z0-9_-])");
     private static final Pattern BASE58_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9])[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8,}(?![a-zA-Z0-9])");
@@ -3511,6 +3527,7 @@ public class Convertors {
         findMatches(str, HEX_SPACED_SEQUENCE_PATTERN, "hex_spaced", matches);
         findMatches(str, UTF7_SEQUENCE_PATTERN, "utf7", matches);
         findMatches(str, CHARCODE_SEQUENCE_PATTERN, "charcode", matches);
+        findMatches(str, BASE64_MULTILINE_SEQUENCE_PATTERN, "base64_multiline", matches);
         findMatches(str, BASE64_SEQUENCE_PATTERN, "base64", matches);
         findMatches(str, BASE32_SEQUENCE_PATTERN, "base32", matches);
         findMatches(str, BASE64URL_SEQUENCE_PATTERN, "base64url", matches);
@@ -3644,6 +3661,22 @@ public class Convertors {
                 }
                 tagName = "base64";
                 break;
+            case "base64_multiline": {
+                String stripped = encoded.replaceAll("\\s+", "");
+                if (stripped.length() < 4 || stripped.length() % 4 != 0) {
+                    return null;
+                }
+                try {
+                    decoded = decode_base64(stripped);
+                    if (!isValidBaseEncodedContent(decoded)) {
+                        return null;
+                    }
+                } catch (Exception e) {
+                    return null;
+                }
+                tagName = "base64";
+                break;
+            }
             case "base32":
                 if (encoded.length() < 8 || encoded.length() % 8 != 0) {
                     return null;
@@ -3876,6 +3909,17 @@ public class Convertors {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "base64");
+                }
+            }
+            if (!matched) {
+                String strippedBase64 = stripWhitespaceIfMultiLineBase64(str);
+                if (strippedBase64 != null) {
+                    test = decode_base64(strippedBase64);
+                    if (isAsciiOrCompressed(test)) {
+                        str = test;
+                        matched = true;
+                        appendTags(openTags, closeTags, "base64");
+                    }
                 }
             }
             if (BASE64URL_PATTERN.matcher(str).find() && str.length() >= 4 && !matched) {
