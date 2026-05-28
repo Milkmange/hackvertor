@@ -1,5 +1,13 @@
 # Changelog
 
+## Version v2.2.52 (2026-05-28)
+
+- Improved smart decoder to decode base64 separated by new lines which is common in SMTP messages.
+- Added comment to Bambda code so it's clear where and how to use it
+- Merge remote-tracking branch 'origin/master'
+- Updated BApp description
+- Update CHANGELOG.md for v2.2.51
+
 ## Version v2.2.51 (2026-05-20)
 
 - - Made request/response available in Tag Automator - Fixed UTF-8 issues in requests - Fixed context body to convert tags
