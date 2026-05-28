@@ -3502,6 +3502,34 @@ public class Convertors {
         return true;
     }
 
+    private static boolean isMostlyAsciiOrCompressed(String str) {
+        if (isGzip(str) || isDeflate(str)) {
+            return true;
+        }
+        if (str.isEmpty()) {
+            return false;
+        }
+        int asciiCount = 0;
+        int totalCount = 0;
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            totalCount++;
+            if (cp == 0x09 || cp == 0x0A || cp == 0x0D) {
+                asciiCount++;
+                continue;
+            }
+            if (cp < 0x20 || cp == 0x7F || cp == 0xFFFD || Character.isISOControl(cp)) {
+                return false;
+            }
+            if (cp <= 0x7F) {
+                asciiCount++;
+            }
+        }
+        return asciiCount * 4 >= totalCount * 3;
+    }
+
     private static boolean isValidBaseEncodedContent(String str) {
         if (isGzip(str) || isDeflate(str)) {
             return true;
@@ -3926,7 +3954,7 @@ public class Convertors {
             }
             if (isBase64(str, true) && !matched) {
                 test = decode_base64(str);
-                if (isAsciiOrCompressed(test)) {
+                if (isMostlyAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "base64");

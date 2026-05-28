@@ -1057,4 +1057,12 @@ public class AutoDecodeNestedTests extends BaseHackvertorTest {
         String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
         assertEquals("<@base64>" + input + "</@base64>", decoded);
     }
+
+    @Test
+    void testSingleLineBase64WithLatin1Content() {
+        String input = "© 2026 PortSwigger Ltd. All rights reserved.";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + b64 + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
 }
