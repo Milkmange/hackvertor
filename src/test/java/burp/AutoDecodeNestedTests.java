@@ -1029,4 +1029,32 @@ public class AutoDecodeNestedTests extends BaseHackvertorTest {
         String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + multilineB64 + "</@auto_decode_no_decrypt>", hackvertor);
         assertEquals("<@base64>" + input + "</@base64>", decoded);
     }
+
+    @Test
+    void testMultilineBase64PaddingOnOwnLine() {
+        String input = "a".repeat(515);
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64WithUtf8Content() {
+        String input = "a".repeat(513) + "©";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
 }

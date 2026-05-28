@@ -718,4 +718,18 @@ public class AutoDecodePartialTests extends BaseHackvertorTest {
         String result = Convertors.auto_decode_partial(input);
         assertEquals("Body:\r\n<@base64>" + original + "</@base64>\r\nEnd", result);
     }
+
+    @Test
+    void testBase64MultilinePartialDecodePaddingOnOwnLine() {
+        String original = "a".repeat(515);
+        String b64 = hackvertor.convert("<@base64>" + original + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String result = Convertors.auto_decode_partial(wrapped.toString());
+        assertEquals("<@base64>" + original + "</@base64>", result);
+    }
 }

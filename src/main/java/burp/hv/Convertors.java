@@ -3427,7 +3427,7 @@ public class Convertors {
     private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]+-");
     private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,\\s])+\\d{2,3}");
     private static final Pattern BASE64_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])[a-zA-Z0-9+/]{4,}={0,2}(?![a-zA-Z0-9+/=])");
-    private static final Pattern BASE64_MULTILINE_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])(?:[a-zA-Z0-9+/]{4})+(?:[\\r\\n]+(?:[a-zA-Z0-9+/]{4})+)+(?:[a-zA-Z0-9+/]{0,3}={1,2})?(?![a-zA-Z0-9+/=])");
+    private static final Pattern BASE64_MULTILINE_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])(?:[a-zA-Z0-9+/]{4})+(?:[\\r\\n]+(?:[a-zA-Z0-9+/]{4})+)+(?:[\\r\\n]*[a-zA-Z0-9+/]{0,3}={1,2})?(?![a-zA-Z0-9+/=])");
     private static final Pattern BASE64_WITH_WHITESPACE_PATTERN = Pattern.compile("^[a-zA-Z0-9+/]+={0,2}$");
     private static final Pattern BASE32_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Z2-7])[A-Z2-7]{4,}={0,6}(?![A-Z2-7=])");
     private static final Pattern BASE64URL_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Za-z0-9_-])[A-Za-z0-9_-]*[_-][A-Za-z0-9_-]*(?![A-Za-z0-9_-])");
@@ -3479,6 +3479,27 @@ public class Convertors {
 
     private static boolean isAsciiOrCompressed(String str) {
         return isAscii(str) || isGzip(str) || isDeflate(str);
+    }
+
+    private static boolean isPrintableTextOrCompressed(String str) {
+        if (isGzip(str) || isDeflate(str)) {
+            return true;
+        }
+        if (str.isEmpty()) {
+            return false;
+        }
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            if (cp == 0x09 || cp == 0x0A || cp == 0x0D) {
+                continue;
+            }
+            if (cp < 0x20 || cp == 0x7F || cp == 0xFFFD || Character.isISOControl(cp)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isValidBaseEncodedContent(String str) {
@@ -3915,7 +3936,7 @@ public class Convertors {
                 String strippedBase64 = stripWhitespaceIfMultiLineBase64(str);
                 if (strippedBase64 != null) {
                     test = decode_base64(strippedBase64);
-                    if (isAsciiOrCompressed(test)) {
+                    if (isPrintableTextOrCompressed(test)) {
                         str = test;
                         matched = true;
                         appendTags(openTags, closeTags, "base64");
