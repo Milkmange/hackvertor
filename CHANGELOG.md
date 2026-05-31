@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v2.2.54 (2026-05-28)
+
+- Improved base64 detection
+- Merge remote-tracking branch 'origin/master'
+- Further improved base64 decoding with new lines
+- Update CHANGELOG.md for v2.2.52
+
 ## Version v2.2.52 (2026-05-28)
 
 - Improved smart decoder to decode base64 separated by new lines which is common in SMTP messages.
