@@ -732,4 +732,42 @@ public class AutoDecodePartialTests extends BaseHackvertorTest {
         String result = Convertors.auto_decode_partial(wrapped.toString());
         assertEquals("<@base64>" + original + "</@base64>", result);
     }
+
+    @Test
+    void testBase64MultilineWithUtf8CharDecodesAsSingleTag() {
+        String block = "UG9ydFN3aWdnZXIKICAgIFlvdXIgdmVyaWZpY2F0aW9uIGNvZGUKICAgIFlvdXIgdmVyaWZpY2F0\n" +
+                "aW9uIGNvZGUgZm9yIGJwNHRka2t2c2p4NXJ0ZmE5OWoyb3M5M251dGxoYzUxQHBzcmVzLm5ldCBp\n" +
+                "czoKICAgICAgICAgIDU5NzI1NwogICAgVGhpcyBjb2RlIHdpbGwgZXhwaXJlIGluIDUgbWludXRl\n" +
+                "cy4KICAgICAgICAgICAgICDCqSAyMDI2IFBvcnRTd2lnZ2VyIEx0ZC4gQWxsIHJpZ2h0cyByZXNl\n" +
+                "cnZlZC4K";
+        String input = "Content-Transfer-Encoding: base64\n\n" + block;
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals(1, countOccurrences(result, "<@base64>"));
+        assertEquals(1, countOccurrences(result, "</@base64>"));
+        assertTrue(result.contains("PortSwigger"));
+        assertTrue(result.contains("597257"));
+        assertTrue(result.contains("© 2026 PortSwigger Ltd. All rights reserved."));
+    }
+
+    @Test
+    void testBase64MultilineWithUtf8CharDoesNotBreakIntoParts() {
+        String block = "UG9ydFN3aWdnZXIKICAgIFlvdXIgdmVyaWZpY2F0aW9uIGNvZGUKICAgIFlvdXIgdmVyaWZpY2F0\n" +
+                "aW9uIGNvZGUgZm9yIGJwNHRka2t2c2p4NXJ0ZmE5OWoyb3M5M251dGxoYzUxQHBzcmVzLm5ldCBp\n" +
+                "czoKICAgICAgICAgIDU5NzI1NwogICAgVGhpcyBjb2RlIHdpbGwgZXhwaXJlIGluIDUgbWludXRl\n" +
+                "cy4KICAgICAgICAgICAgICDCqSAyMDI2IFBvcnRTd2lnZ2VyIEx0ZC4gQWxsIHJpZ2h0cyByZXNl\n" +
+                "cnZlZC4K";
+        String result = assertDoesNotThrow(() -> Convertors.auto_decode_partial(block));
+        assertTrue(result.startsWith("<@base64>"));
+        assertTrue(result.endsWith("</@base64>"));
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
+    }
 }

@@ -1306,8 +1306,12 @@ public class Convertors {
     }
 
     static String decode_base32(String str) {
-        Base32 base32 = new Base32();
-        return helpers.bytesToString(base32.decode(str.getBytes()));
+        try {
+            Base32 base32 = new Base32();
+            return helpers.bytesToString(base32.decode(str.getBytes()));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String base58_encode(String str) {
@@ -1315,7 +1319,11 @@ public class Convertors {
     }
 
     static String decode_base58(String str) {
-        return helpers.bytesToString(Base58.decode(str));
+        try {
+            return helpers.bytesToString(Base58.decode(str));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String base64Encode(String str) {
@@ -1324,11 +1332,10 @@ public class Convertors {
 
     static String decode_base64(String str) {
         try {
-            str = decodeBytesPreservingBinary(helpers.base64Decode(str));
+            return decodeBytesPreservingBinary(helpers.base64Decode(str));
         } catch (Exception e) {
-            stderr.println(e.getMessage());
+            return str;
         }
-        return str;
     }
 
     private static String decodeBytesPreservingBinary(byte[] bytes) {
@@ -1410,19 +1417,20 @@ public class Convertors {
     }
 
     static String decode_base64url(String str) {
-        str = str.replaceAll("-", "+");
-        str = str.replaceAll("_", "/");
-        switch (str.length() % 4) {
-            case 0:
-                break;
+        String padded = str.replace("-", "+").replace("_", "/");
+        switch (padded.length() % 4) {
             case 2:
-                str += "==";
+                padded += "==";
                 break;
             case 3:
-                str += "=";
+                padded += "=";
                 break;
         }
-        return decodeBytesPreservingBinary(helpers.base64Decode(str));
+        try {
+            return decodeBytesPreservingBinary(helpers.base64Decode(padded));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String burp_urlencode(String str) {
@@ -3600,16 +3608,26 @@ public class Convertors {
                 continue;
             }
 
-            DecodeResult decodeResult = decodeMatchedSequence(match.matched, match.type);
-            if (decodeResult != null && !decodeResult.decoded.equals(match.matched) && isAsciiOrCompressed(decodeResult.decoded)) {
-                result.append(str, lastEnd, match.start);
-                DecompressResult decompressResult = decompressIfNeeded(decodeResult.decoded);
-                result.append(decodeResult.openTag);
-                result.append(decompressResult.openTags);
-                result.append(decompressResult.decoded);
-                result.append(decompressResult.closeTags);
-                result.append(decodeResult.closeTag);
-                lastEnd = match.end;
+            try {
+                DecodeResult decodeResult = decodeMatchedSequence(match.matched, match.type);
+                if (decodeResult == null || decodeResult.decoded.equals(match.matched)) {
+                    continue;
+                }
+                boolean contentOk = match.type.equals("base64_multiline")
+                        ? isPrintableTextOrCompressed(decodeResult.decoded)
+                        : isAsciiOrCompressed(decodeResult.decoded);
+                if (contentOk) {
+                    result.append(str, lastEnd, match.start);
+                    DecompressResult decompressResult = decompressIfNeeded(decodeResult.decoded);
+                    result.append(decodeResult.openTag);
+                    result.append(decompressResult.openTags);
+                    result.append(decompressResult.decoded);
+                    result.append(decompressResult.closeTags);
+                    result.append(decodeResult.closeTag);
+                    lastEnd = match.end;
+                }
+            } catch (Exception e) {
+                stderr.println(e.getMessage());
             }
         }
 
@@ -3717,7 +3735,7 @@ public class Convertors {
                 }
                 try {
                     decoded = decode_base64(stripped);
-                    if (!isValidBaseEncodedContent(decoded)) {
+                    if (!isPrintableTextOrCompressed(decoded)) {
                         return null;
                     }
                 } catch (Exception e) {
