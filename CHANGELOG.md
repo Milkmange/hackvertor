@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v2.2.57 (2026-06-03)
+
+- Added smart paste feature in the UI and in Repeater
+- Merge remote-tracking branch 'origin/master'
+- Added more email decoding tests and improved smart decode further
+- Update CHANGELOG.md for v2.2.54
+
 ## Version v2.2.54 (2026-05-28)
 
 - Improved base64 detection
