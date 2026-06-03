@@ -51,7 +51,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.58";
+    public static String version = "v2.2.59";
     public static Supplier<String> sharedGetTagExecutionKey = null;
     public static Function<String, String> sharedConvert = null;
     public static JFrame HackvertorFrame = null;
@@ -378,6 +378,20 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     private HotKeyHandler createSmartPasteHandler() {
         return event -> {
+            String clipboard = readClipboardString();
+            if (clipboard == null) {
+                return;
+            }
+            String decoded = smartDecode(clipboard);
+
+            HackvertorInput hackvertorInput = event.inputEvent() == null
+                ? null
+                : findHackvertorInput(event.inputEvent().getComponent());
+            if (hackvertorInput != null) {
+                SwingUtilities.invokeLater(() -> hackvertorInput.replaceSelection(decoded));
+                return;
+            }
+
             if (event.messageEditorRequestResponse().isEmpty()) {
                 return;
             }
@@ -385,11 +399,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             if (!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
                 return;
             }
-            String clipboard = readClipboardString();
-            if (clipboard == null) {
-                return;
-            }
-            String decoded = smartDecode(clipboard);
             String request = requestResponse.requestResponse().request().toString();
             int start;
             int end;
@@ -415,6 +424,16 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         } catch (UnsupportedFlavorException | IOException e) {
             return null;
         }
+    }
+
+    private static HackvertorInput findHackvertorInput(Component component) {
+        while (component != null) {
+            if (component instanceof HackvertorInput) {
+                return (HackvertorInput) component;
+            }
+            component = component.getParent();
+        }
+        return null;
     }
 
     private HotKeyHandler createMultiEncoderHandler(MontoyaApi montoyaApi) {
