@@ -51,7 +51,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.57";
+    public static String version = "v2.2.58";
     public static Supplier<String> sharedGetTagExecutionKey = null;
     public static Function<String, String> sharedConvert = null;
     public static JFrame HackvertorFrame = null;
@@ -389,7 +389,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             if (clipboard == null) {
                 return;
             }
-            String decoded = auto_decode_partial(clipboard);
+            String decoded = smartDecode(clipboard);
             String request = requestResponse.requestResponse().request().toString();
             int start;
             int end;

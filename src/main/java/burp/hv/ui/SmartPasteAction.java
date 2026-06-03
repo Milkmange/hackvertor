@@ -26,6 +26,6 @@ public class SmartPasteAction extends AbstractAction {
         if (clipboard == null) {
             return;
         }
-        inputArea.replaceSelection(Convertors.auto_decode_partial(clipboard));
+        inputArea.replaceSelection(Convertors.smartDecode(clipboard));
     }
 }

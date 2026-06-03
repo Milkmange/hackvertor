@@ -3548,6 +3548,14 @@ public class Convertors {
         return hasMajorityAlphaNum(str) || isJsonLike(str) || isXmlOrHtmlLike(str);
     }
 
+    public static String smartDecode(String str) {
+        String full = auto_decode_no_decrypt(str);
+        if (!full.equals(str)) {
+            return full;
+        }
+        return auto_decode_partial(str);
+    }
+
     static String auto_decode(String str) {
         return auto_decode_decrypt(str, true);
     }
